@@ -1,0 +1,124 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.graphiq.pdi</groupId>
+	<artifactId>coalesceplugin</artifactId>
+	<version>0.0.1</version>
+	<name>CoalescePlugin</name>
+
+	<repositories>
+		<repository>
+			<id>pentaho-repo</id>
+			<url>http://repo.pentaho.org/artifactory/repo</url>
+		</repository>
+	</repositories>
+
+	<properties>
+		<maven.compiler.source>1.7</maven.compiler.source>
+		<maven.compiler.target>1.7</maven.compiler.target>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.11</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>pentaho-kettle</groupId>
+			<artifactId>kettle-core</artifactId>
+			<version>5.0.9</version>
+		</dependency>
+		<dependency>
+			<groupId>pentaho-kettle</groupId>
+			<artifactId>kettle-engine</artifactId>
+			<version>5.0.9</version>
+		</dependency>
+		<dependency>
+			<groupId>pentaho-kettle</groupId>
+			<artifactId>kettle-ui-swt</artifactId>
+			<version>5.0.9</version>
+		</dependency>
+		<dependency>
+			<groupId>pentaho-kettle</groupId>
+			<artifactId>kettle-test</artifactId>
+			<version>4.4.3.3</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.0</version>
+				<configuration>
+					<source>${maven.compiler.source}</source>
+					<target>${maven.compiler.target}</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<finalName>coalesceplugin</finalName>
+				</configuration>
+			</plugin>
+
+			<plugin> <!--Required to build the final dist as per kettle spec-->
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>1.8</version>
+				<executions>
+					<execution>
+						<phase>install</phase>
+						<configuration>
+							<tasks>
+								<echo message="Looking for local PDI installation in ${pdi.home}"/>
+
+								<!-- change these to adapt to your environment -->
+								<property name="kettle-dir" location="your_kettle_4.x_dir_here" />
+								<available file="${pdi.home}" type="dir" property="kettle-dir.present" />
+								<fail unless="kettle-dir.present" message="PDI installation not found. Please specify the path to your PDI installation using mvn install -Dpdi.home=/my/path"/>
+
+								<!-- remove previous installations -->
+								<delete dir="${pdi.home}/plugins/steps/${project.name}" />
+
+								<!-- put fresh files in place -->
+								<mkdir dir="${pdi.home}/plugins/steps/${project.name}" />
+								<copy todir="${pdi.home}/plugins/steps/${project.name}">
+									<fileset dir="target/" includes="**/*.jar" />
+									<fileset dir="src/main/resources/" includes="**" />
+									<fileset dir="" includes="version.xml" />
+								</copy>
+								<echo message="Installed the plugin in PDI. To test, please restart Spoon."/>
+							</tasks>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes> <!--Required to explicitly include resources to jar to accommodate legacy resource bundle -->
+					<include>**.png</include>
+				</includes>
+			</resource>
+
+			<resource>
+				<directory>src/main/java</directory>
+				<includes> <!--Required to explicitly include resources to jar to accommodate legacy resource bundle -->
+					<include>**/*.properties</include>
+				</includes>
+			</resource>
+
+		</resources>
+	</build>
+</project>

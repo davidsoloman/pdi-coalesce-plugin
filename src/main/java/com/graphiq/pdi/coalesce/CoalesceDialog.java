@@ -107,7 +107,7 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		super(parent, (BaseStepMeta) in, transMeta, sname);
 		meta = (CoalesceMeta) in;
 
-		inputFields = new HashMap<>();
+		inputFields = new HashMap<String, Integer>();
 	}
 
 	/**
@@ -395,7 +395,7 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 
 	protected void setComboBoxes() {
 		// Something was changed in the row.
-		final Map<String, Integer> fields = new TreeMap<>(inputFields);
+		final Map<String, Integer> fields = new TreeMap<String, Integer>(inputFields);
 
 		String[] fieldNames = new String[inputFields.size()];
 		fieldNames = fields.keySet().toArray(fieldNames);

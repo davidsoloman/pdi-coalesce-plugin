@@ -27,24 +27,34 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.10.19</version>
+		</dependency>
+		<dependency>
 			<groupId>pentaho-kettle</groupId>
 			<artifactId>kettle-core</artifactId>
-			<version>5.0.9</version>
+			<version>5.4.1.0-167</version>
 		</dependency>
 		<dependency>
 			<groupId>pentaho-kettle</groupId>
 			<artifactId>kettle-engine</artifactId>
-			<version>5.0.9</version>
+			<version>5.4.1.0-167</version>
 		</dependency>
 		<dependency>
 			<groupId>pentaho-kettle</groupId>
 			<artifactId>kettle-ui-swt</artifactId>
-			<version>5.0.9</version>
+			<version>5.4.1.0-164</version>
 		</dependency>
 		<dependency>
 			<groupId>pentaho-kettle</groupId>
 			<artifactId>kettle-test</artifactId>
 			<version>4.4.3.3</version>
+		</dependency>
+		<dependency>
+			<groupId>pentaho-kettle</groupId>
+			<artifactId>kettle-engine-test</artifactId>
+			<version>5.4.0.9-162</version>
 		</dependency>
 	</dependencies>
 

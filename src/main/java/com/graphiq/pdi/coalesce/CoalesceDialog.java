@@ -39,6 +39,7 @@ import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.plugins.PluginInterface;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.StepMeta;
@@ -53,25 +54,25 @@ import java.util.*;
 
 /**
  * This class is part of the demo step plug-in implementation.
- * It demonstrates the basics of developing a plug-in step for PDI. 
- * 
+ * It demonstrates the basics of developing a plug-in step for PDI.
+ *
  * The demo step adds a new string field to the row stream and sets its
  * value to "Hello World!". The user may select the name of the new field.
- *   
+ *
  * This class is the implementation of StepDialogInterface.
  * Classes implementing this interface need to:
- * 
+ *
  * - build and open a SWT dialog displaying the step's settings (stored in the step's meta object)
  * - write back any changes the user makes to the step's meta object
- * - report whether the user changed any settings when confirming the dialog 
- * 
+ * - report whether the user changed any settings when confirming the dialog
+ *
  */
 public class CoalesceDialog extends BaseStepDialog implements StepDialogInterface {
 
 	/**
-	 *	The PKG member is used when looking up internationalized strings.
-	 *	The properties file with localized keys is expected to reside in 
-	 *	{the package of the class specified}/com.graphiq.pdi.coalesce.messages/messages_{locale}.properties
+	 * The PKG member is used when looking up internationalized strings.
+	 * The properties file with localized keys is expected to reside in
+	 * {the package of the class specified}/com.graphiq.pdi.coalesce.messages/messages_{locale}.properties
 	 */
 	private static Class<?> PKG = CoalesceMeta.class; // for i18n purposes
 
@@ -80,47 +81,45 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 	// the dialog writes the settings to it when confirmed 
 	private CoalesceMeta meta;
 
-	private Label wlFields;
 	private TableView wFields;
-	private FormData fdlFields, fdFields;
 	private ColumnInfo[] columnInfos;
 
-	private Map<String, Integer> inputFields;
+	private Map<String, Integer> allInputStreamFields;
 
 	/**
 	 * Constants:
 	 */
 	public static final String HELP_DOCUMENTATION_URL =
-			"https://github.com/graphiq-data/pdi-coalesce-plugin/blob/master/help.md";
+					"https://github.com/graphiq-data/pdi-coalesce-plugin/blob/master/help.md";
 
 	/**
 	 * The constructor should simply invoke super() and save the incoming meta
 	 * object to a local variable, so it can conveniently read and write settings
 	 * from/to it.
-	 * 
-	 * @param parent 	the SWT shell to open the dialog in
-	 * @param in		the meta object holding the step's settings
-	 * @param transMeta	transformation description
-	 * @param sname		the step name
+	 *
+	 * @param parent    the SWT shell to open the dialog in
+	 * @param in        the meta object holding the step's settings
+	 * @param transMeta transformation description
+	 * @param sname     the step name
 	 */
-	public CoalesceDialog(Shell parent, Object in, TransMeta transMeta, String sname) {
-		super(parent, (BaseStepMeta) in, transMeta, sname);
+	public CoalesceDialog( Shell parent, Object in, TransMeta transMeta, String sname ) {
+		super( parent, (BaseStepMeta) in, transMeta, sname );
 		meta = (CoalesceMeta) in;
 
-		inputFields = new HashMap<String, Integer>();
+		allInputStreamFields = new HashMap<String, Integer>();
 	}
 
 	/**
 	 * This method is called by Spoon when the user opens the settings dialog of the step.
 	 * It should open the dialog and return only once the dialog has been closed by the user.
-	 * 
+	 *
 	 * If the user confirms the dialog, the meta object (passed in the constructor) must
-	 * be updated to reflect the new step settings. The changed flag of the meta object must 
+	 * be updated to reflect the new step settings. The changed flag of the meta object must
 	 * reflect whether the step configuration was changed by the dialog.
-	 * 
+	 *
 	 * If the user cancels the dialog, the meta object must not be updated, and its changed flag
 	 * must remain unaltered.
-	 * 
+	 *
 	 * The open() method must return the name of the step after the user has confirmed the dialog,
 	 * or null if the user cancelled the dialog.
 	 */
@@ -131,23 +130,23 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		Display display = parent.getDisplay();
 
 		// SWT code for preparing the dialog
-		shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MIN | SWT.MAX);
-		props.setLook(shell);
-		setShellImage(shell, meta);
-		
+		shell = new Shell( parent, SWT.DIALOG_TRIM | SWT.RESIZE | SWT.MIN | SWT.MAX );
+		props.setLook( shell );
+		setShellImage( shell, meta );
+
 		// Save the value of the changed flag on the meta object. If the user cancels
 		// the dialog, it will be restored to this saved value.
 		// The "changed" variable is inherited from BaseStepDialog
 		changed = meta.hasChanged();
-		
+
 		// The ModifyListener used on all controls. It will update the meta object to 
 		// indicate that changes are being made.
 		ModifyListener lsMod = new ModifyListener() {
-			public void modifyText(ModifyEvent e) {
+			public void modifyText( ModifyEvent e ) {
 				meta.setChanged();
 			}
 		};
-		
+
 		// ------------------------------------------------------- //
 		// SWT code for building the actual settings dialog        //
 		// ------------------------------------------------------- //
@@ -155,60 +154,58 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		formLayout.marginWidth = Const.FORM_MARGIN;
 		formLayout.marginHeight = Const.FORM_MARGIN;
 
-		shell.setLayout(formLayout);
-		shell.setText(BaseMessages.getString(PKG, "CoalesceDialog.Shell.Title"));
+		shell.setLayout( formLayout );
+		shell.setText( BaseMessages.getString( PKG, "CoalesceDialog.Shell.Title" ) );
 
 		int middle = props.getMiddlePct();
 		int margin = Const.MARGIN;
 
 		// Stepname line
-		setStepName(middle, margin, lsMod);
+		setStepName( middle, margin, lsMod );
 
 		// Column infos
-		setTable(margin, lsMod);
+		setTable( margin, lsMod );
 
 		// OK and cancel buttons
-		setBottomButtons(margin);
+		setBottomButtons( margin );
 
 		// default listener (for hitting "enter")
 		lsDef = new SelectionAdapter() {
-			public void widgetDefaultSelected(SelectionEvent e) {ok();}
+			public void widgetDefaultSelected( SelectionEvent e ) {
+				ok();
+			}
 		};
-		wStepname.addSelectionListener(lsDef);
+		wStepname.addSelectionListener( lsDef );
 
 		// Detect X or ALT-F4 or something that kills this window and cancel the dialog properly
-		shell.addShellListener(new ShellAdapter() {
-			public void shellClosed(ShellEvent e) {cancel();}
-		});
-		
+		shell.addShellListener( new ShellAdapter() {
+			public void shellClosed( ShellEvent e ) {
+				cancel();
+			}
+		} );
+
 		// Set/Restore the dialog size based on last position on screen
 		// The setSize() method is inherited from BaseStepDialog
 		setSize();
 
 		// populate the dialog with the values from the meta object
 		populateDialog();
-		
+
 		// restore the changed flag to original value, as the modify listeners fire during dialog population 
-		meta.setChanged(changed);
+		meta.setChanged( changed );
 
-		// open dialog and enter event loop 
+		// open dialog
 		shell.open();
-		while (!shell.isDisposed()) {
-			if (!display.readAndDispatch())
-				display.sleep();
-		}
 
-		// at this point the dialog has closed, so either ok() or cancel() have been executed
-		// The "stepname" variable is inherited from BaseStepDialog
 		return stepname;
 	}
 
 	@Override
-	protected Button createHelpButton(Shell shell, StepMeta stepMeta, PluginInterface plugin){
-		plugin.setDocumentationUrl(HELP_DOCUMENTATION_URL);
-		return super.createHelpButton(shell, stepMeta, plugin);
+	protected Button createHelpButton( Shell shell, StepMeta stepMeta, PluginInterface plugin ) {
+		plugin.setDocumentationUrl( HELP_DOCUMENTATION_URL );
+		return super.createHelpButton( shell, stepMeta, plugin );
 	}
-	
+
 	/**
 	 * This helper method puts the step configuration stored in the meta object
 	 * and puts it into the dialog controls.
@@ -220,18 +217,15 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 				if ( meta.getOutputFields()[i] != null ) {
 					item.setText( 1, meta.getOutputFields()[i] );
 				}
-				if ( meta.getFieldsA()[i] != null ) {
-					item.setText( 2, meta.getFieldsA()[i] );
+				for ( int j = 0; j < CoalesceMeta.noInputFields; j++ ) {
+					if ( meta.getInputFields()[i][j] != null ) {
+						item.setText( j + 2, meta.getInputFields()[i][j] );
+					}
 				}
-				if ( meta.getFieldsB()[i] != null ) {
-					item.setText( 3, meta.getFieldsB()[i] );
-				}
-				if ( meta.getFieldsB()[i] != null ) {
-					item.setText( 4, meta.getFieldsC()[i] );
-				}
+				item.setText( 2 + CoalesceMeta.noInputFields, ValueMeta.getTypeDesc( meta.getValueType()[i] ) );
+				item.setText( 3 + CoalesceMeta.noInputFields, CoalesceMeta.getStringFromBoolean( meta.getDoRemoveInputFields()[i] ) );
 			}
 		}
-
 		wFields.setRowNums();
 		wFields.optWidth( true );
 
@@ -240,24 +234,24 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 	}
 
 	/**
-	 * Called when the user cancels the dialog.  
+	 * Called when the user cancels the dialog.
 	 */
 	private void cancel() {
 		// The "stepname" variable will be the return value for the open() method. 
 		// Setting to null to indicate that dialog was cancelled.
 		stepname = null;
 		// Restoring original "changed" flag on the met aobject
-		meta.setChanged(changed);
+		meta.setChanged( changed );
 		// close the SWT dialog window
 		dispose();
 	}
-	
+
 	/**
 	 * Called when the user confirms the dialog
 	 */
 	private void ok() {
 		stepname = wStepname.getText();
-		if ( Const.isEmpty(stepname) ) {
+		if ( Const.isEmpty( stepname ) ) {
 			return;
 		}
 
@@ -266,7 +260,7 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		dispose();
 	}
 
-	private void populateMetaWithInfo(){
+	private void populateMetaWithInfo() {
 		int nrkeys = wFields.nrNonEmpty();
 
 		meta.allocate( nrkeys );
@@ -278,82 +272,99 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		for ( int i = 0; i < nrkeys; i++ ) {
 			TableItem item = wFields.getNonEmpty( i );
 			meta.getOutputFields()[i] = item.getText( 1 );
-			meta.getFieldsA()[i] = item.getText( 2 );
-			meta.getFieldsB()[i] = item.getText( 3 );
-			meta.getFieldsC()[i] = item.getText( 4 );
 
-			int noEmpty = (meta.getFieldsA()[i].isEmpty() ? 1 : 0)
-						+ (meta.getFieldsB()[i].isEmpty() ? 1 : 0)
-						+ (meta.getFieldsC()[i].isEmpty() ? 1 : 0);
+			int noNonEmptyFields = 0;
+			for ( int j = 0; j < CoalesceMeta.noInputFields; j++ ) {
+				meta.getInputFields()[i][j] = item.getText( 2 + j );
 
-			if (noEmpty >= 2){
+				if ( !meta.getInputFields()[i][j].isEmpty() ) {
+					noNonEmptyFields++;
+				}
+			}
+
+			if ( noNonEmptyFields < 2 ) {
 				MessageDialogWithToggle md =
-						new MessageDialogWithToggle(
-								shell,
-								BaseMessages.getString( PKG, "CoalesceDialog.Validations.DialogTitle" ),
-								null,
-								BaseMessages.getString( PKG, "CoalesceDialog.Validations.DialogMessage", Const.CR, Const.CR ),
-								MessageDialog.WARNING,
-								new String[] { BaseMessages.getString( PKG, "CoalesceDialog.Validations.Option.1" ) },
-								0,
-								BaseMessages.getString( PKG, "CoalesceDialog.Validations.Option.2" ),
-								false);
+								new MessageDialogWithToggle(
+												shell,
+												BaseMessages.getString( PKG, "CoalesceDialog.Validations.DialogTitle" ),
+												null,
+												BaseMessages.getString( PKG, "CoalesceDialog.Validations.DialogMessage", Const.CR, Const.CR ),
+												MessageDialog.WARNING,
+												new String[] { BaseMessages.getString( PKG, "CoalesceDialog.Validations.Option.1" ) },
+												0,
+												BaseMessages.getString( PKG, "CoalesceDialog.Validations.Option.2" ),
+												false );
 				MessageDialogWithToggle.setDefaultImage( GUIResource.getInstance().getImageSpoon() );
 				md.open();
 			}
+
+			String typeValueText = item.getText( 2 + CoalesceMeta.noInputFields );
+			meta.getValueType()[i] = typeValueText.isEmpty() ? ValueMeta.TYPE_NONE
+							: ValueMeta.getType( typeValueText );
+
+			String isRemoveText = item.getText( 3 + CoalesceMeta.noInputFields );
+			meta.getDoRemoveInputFields()[i] = isRemoveText.isEmpty() ? false
+							: CoalesceMeta.getBooleanFromString( isRemoveText );
 		}
 	}
 
-	private void setStepName(int middle, int margin, ModifyListener lsMod){
-		wlStepname = new Label(shell, SWT.RIGHT);
-		wlStepname.setText(BaseMessages.getString(PKG, "System.Label.StepName"));
-		props.setLook(wlStepname);
+	private void setStepName( int middle, int margin, ModifyListener lsMod ) {
+		wlStepname = new Label( shell, SWT.RIGHT );
+		wlStepname.setText( BaseMessages.getString( PKG, "System.Label.StepName" ) );
+		props.setLook( wlStepname );
 		fdlStepname = new FormData();
-		fdlStepname.left = new FormAttachment(0, 0);
-		fdlStepname.right = new FormAttachment(middle, -margin);
-		fdlStepname.top = new FormAttachment(0, margin);
-		wlStepname.setLayoutData(fdlStepname);
+		fdlStepname.left = new FormAttachment( 0, 0 );
+		fdlStepname.right = new FormAttachment( middle, -margin );
+		fdlStepname.top = new FormAttachment( 0, margin );
+		wlStepname.setLayoutData( fdlStepname );
 
-		wStepname = new Text(shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER);
-		wStepname.setText(stepname);
-		props.setLook(wStepname);
-		wStepname.addModifyListener(lsMod);
+		wStepname = new Text( shell, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+		wStepname.setText( stepname );
+		props.setLook( wStepname );
+		wStepname.addModifyListener( lsMod );
 		fdStepname = new FormData();
-		fdStepname.left = new FormAttachment(middle, 0);
-		fdStepname.top = new FormAttachment(0, margin);
-		fdStepname.right = new FormAttachment(100, 0);
-		wStepname.setLayoutData(fdStepname);
+		fdStepname.left = new FormAttachment( middle, 0 );
+		fdStepname.top = new FormAttachment( 0, margin );
+		fdStepname.right = new FormAttachment( 100, 0 );
+		wStepname.setLayoutData( fdStepname );
 	}
 
 
-	private void setTable(int margin, ModifyListener lsMod){
-		wlFields = new Label( shell, SWT.NONE );
+	private void setTable( int margin, ModifyListener lsMod ) {
+		Label wlFields = new Label( shell, SWT.NONE );
 		wlFields.setText( BaseMessages.getString( PKG, "CoalesceDialog.Fields.Label" ) );
 		props.setLook( wlFields );
-		fdlFields = new FormData();
+		FormData fdlFields = new FormData();
 		fdlFields.left = new FormAttachment( 0, 0 );
 		fdlFields.top = new FormAttachment( wStepname, margin );
 		wlFields.setLayoutData( fdlFields );
 
-		columnInfos =
-			new ColumnInfo[] {
-				new ColumnInfo(
-						BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.OutField" ),
-						ColumnInfo.COLUMN_TYPE_TEXT, false ),
-				new ColumnInfo(
-						BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.FieldA" ),
-						ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false ),
-				new ColumnInfo(
-						BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.FieldB" ),
-						ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false ),
-				new ColumnInfo(
-						BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.FieldC" ),
-						ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false )};
+		columnInfos = new ColumnInfo[3 + CoalesceMeta.noInputFields];
+		columnInfos[0] = new ColumnInfo( BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.OutField" ),
+						ColumnInfo.COLUMN_TYPE_TEXT, false );
+		for ( int i = 0; i < CoalesceMeta.noInputFields; i++ ) {
+			columnInfos[i + 1] = new ColumnInfo(
+							BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.InputField",
+											Character.valueOf( (char) ( 'A' + i ) ).toString() ),
+							ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] { "" }, false );
+		}
+		columnInfos[1 + CoalesceMeta.noInputFields] = new ColumnInfo(
+						BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.ValueType" ),
+						ColumnInfo.COLUMN_TYPE_CCOMBO, ValueMeta.getTypes() );
+		columnInfos[2 + CoalesceMeta.noInputFields] = new ColumnInfo(
+						BaseMessages.getString( PKG, "CoalesceDialog.ColumnInfo.RemoveInputColumns" ),
+						ColumnInfo.COLUMN_TYPE_CCOMBO, new String[] {
+						BaseMessages.getString( PKG, "System.Combo.No" ),
+						BaseMessages.getString( PKG, "System.Combo.Yes" ) } );
 
-		wFields = new TableView(transMeta, shell,
-				SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, columnInfos, 1, lsMod, props);
+		columnInfos[2 + CoalesceMeta.noInputFields].setToolTip( BaseMessages.getString
+						( PKG, "CoalesceDialog.ColumnInfo.RemoveInputColumns.Tooltip" ) );
 
-		fdFields = new FormData();
+		int noFieldRows = ( meta.getOutputFields() != null ? meta.getOutputFields().length : 1 );
+		wFields = new TableView( transMeta, shell,
+						SWT.BORDER | SWT.FULL_SELECTION | SWT.MULTI, columnInfos, noFieldRows, lsMod, props );
+
+		FormData fdFields = new FormData();
 		fdFields.left = new FormAttachment( 0, 0 );
 		fdFields.top = new FormAttachment( wlFields, margin );
 		fdFields.right = new FormAttachment( 100, 0 );
@@ -369,7 +380,7 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 
 						// Remember these fields...
 						for ( int i = 0; i < row.size(); i++ ) {
-							inputFields.put( row.getValueMeta( i ).getName(), Integer.valueOf( i ) );
+							allInputStreamFields.put( row.getValueMeta( i ).getName(), i );
 						}
 
 						setComboBoxes();
@@ -381,47 +392,51 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		};
 		new Thread( runnable ).start();
 
-		wFields.addModifyListener(new ModifyListener() {
-			public void modifyText(ModifyEvent arg0) {
+		wFields.addModifyListener( new ModifyListener() {
+			public void modifyText( ModifyEvent arg0 ) {
 				// Now set the combo's
-				shell.getDisplay().asyncExec(new Runnable() {
+				shell.getDisplay().asyncExec( new Runnable() {
 					public void run() {
 						setComboBoxes();
 					}
-				});
+				} );
 			}
-		});
+		} );
 	}
 
-	protected void setComboBoxes() {
+	private void setComboBoxes() {
 		// Something was changed in the row.
-		final Map<String, Integer> fields = new TreeMap<String, Integer>(inputFields);
+		final Map<String, Integer> fields = new TreeMap<String, Integer>(allInputStreamFields);
 
-		String[] fieldNames = new String[inputFields.size()];
-		fieldNames = fields.keySet().toArray(fieldNames);
+		String[] fieldNames = new String[allInputStreamFields.size()];
+		fieldNames = fields.keySet().toArray( fieldNames );
 
-		columnInfos[1].setComboValues(fieldNames);
-		columnInfos[2].setComboValues(fieldNames);
-		columnInfos[3].setComboValues(fieldNames);
+		for ( int i = 0; i < CoalesceMeta.noInputFields; i++ ) {
+			columnInfos[1 + i].setComboValues( fieldNames );
+		}
 	}
 
-	private void setBottomButtons(int margin){
-		wOK = new Button(shell, SWT.PUSH);
-		wOK.setText(BaseMessages.getString(PKG, "System.Button.OK"));
-		wCancel = new Button(shell, SWT.PUSH);
-		wCancel.setText(BaseMessages.getString(PKG, "System.Button.Cancel"));
+	private void setBottomButtons( int margin ) {
+		wOK = new Button( shell, SWT.PUSH );
+		wOK.setText( BaseMessages.getString( PKG, "System.Button.OK" ) );
+		wCancel = new Button( shell, SWT.PUSH );
+		wCancel.setText( BaseMessages.getString( PKG, "System.Button.Cancel" ) );
 
-		BaseStepDialog.positionBottomButtons(shell, new Button[] { wOK, wCancel }, margin, null);
+		BaseStepDialog.positionBottomButtons( shell, new Button[] { wOK, wCancel }, margin, null );
 
 		// Add listeners for cancel and OK
 		lsCancel = new Listener() {
-			public void handleEvent(Event e) {cancel();}
+			public void handleEvent( Event e ) {
+				cancel();
+			}
 		};
 		lsOK = new Listener() {
-			public void handleEvent(Event e) {ok();}
+			public void handleEvent( Event e ) {
+				ok();
+			}
 		};
 
-		wCancel.addListener(SWT.Selection, lsCancel);
-		wOK.addListener(SWT.Selection, lsOK);
+		wCancel.addListener( SWT.Selection, lsCancel );
+		wOK.addListener( SWT.Selection, lsOK );
 	}
 }

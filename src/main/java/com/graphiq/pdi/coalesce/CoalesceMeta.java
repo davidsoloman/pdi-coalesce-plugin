@@ -22,6 +22,7 @@
 
 package com.graphiq.pdi.coalesce;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.swt.widgets.Shell;
@@ -35,6 +36,7 @@ import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
+import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaFactory;
 import org.pentaho.di.core.variables.VariableSpace;
@@ -55,23 +57,23 @@ import org.w3c.dom.Node;
 
 /**
  * This class is part of the demo step plug-in implementation.
- * It demonstrates the basics of developing a plug-in step for PDI. 
- * 
+ * It demonstrates the basics of developing a plug-in step for PDI.
+ *
  * The demo step adds a new string field to the row stream and sets its
  * value to "Hello World!". The user may select the name of the new field.
- *   
+ *
  * This class is the implementation of StepMetaInterface.
  * Classes implementing this interface need to:
- * 
+ *
  * - keep track of the step settings
  * - serialize step settings both to xml and a repository
  * - provide new instances of objects implementing StepDialogInterface, StepInterface and StepDataInterface
  * - report on how the step modifies the meta-data of the row-stream (row structure and field types)
- * - perform a sanity-check on the settings provided by the user 
- * 
+ * - perform a sanity-check on the settings provided by the user
+ *
  */
 
-@Step(	
+@Step(
 		id = "CoalesceStep",
 		image = "coalesce.png",
 		i18nPackageName="com.graphiq.pdi.coalesce",
@@ -82,9 +84,9 @@ import org.w3c.dom.Node;
 public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 
 	/**
-	 *	The PKG member is used when looking up internationalized strings.
-	 *	The properties file with localized keys is expected to reside in 
-	 *	{the package of the class specified}/com.graphiq.pdi.coalesce.messages/messages_{locale}.properties
+	 * The PKG member is used when looking up internationalized strings.
+	 * The properties file with localized keys is expected to reside in
+	 * {the package of the class specified}/com.graphiq.pdi.coalesce.messages/messages_{locale}.properties
 	 */
 	private static Class<?> PKG = CoalesceMeta.class; // for i18n purposes
 
@@ -93,49 +95,50 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * constants:
 	 */
 	private static final int STRING_AS_DEFAULT = -1;
+	static final int noInputFields = 3;
 
 	/**
-	 * Stores the name of the field added to the row-stream. 
+	 * Stores the name of the field added to the row-stream.
 	 */
 	private String[] outputFields;
-	private String[] fieldsA;
-	private String[] fieldsB;
-	private String[] fieldsC;
+	private String[][] inputFields;
+	private int[] valueType;
+	private boolean[] doRemoveInputFields;
 
 	/**
 	 * Constructor should call super() to make sure the base class has a chance to initialize properly.
 	 */
 	public CoalesceMeta() {
-		super(); 
-	}
-	
-	/**
-	 * Called by Spoon to get a new instance of the SWT dialog for the step.
-	 * A standard implementation passing the arguments to the constructor of the step dialog is recommended.
-	 * 
-	 * @param shell		an SWT Shell
-	 * @param meta 		description of the step 
-	 * @param transMeta	description of the the transformation 
-	 * @param name		the name of the step
-	 * @return 			new instance of a dialog for this step 
-	 */
-	public StepDialogInterface getDialog(Shell shell, StepMetaInterface meta, TransMeta transMeta, String name) {
-		return new CoalesceDialog(shell, meta, transMeta, name);
+		super();
 	}
 
 	/**
-	 * Called by PDI to get a new instance of the step implementation. 
-	 * A standard implementation passing the arguments to the constructor of the step class is recommended.
-	 * 
-	 * @param stepMeta				description of the step
-	 * @param stepDataInterface		instance of a step data class
-	 * @param cnr					copy number
-	 * @param transMeta				description of the transformation
-	 * @param disp					runtime implementation of the transformation
-	 * @return						the new instance of a step implementation 
+	 * Called by Spoon to get a new instance of the SWT dialog for the step.
+	 * A standard implementation passing the arguments to the constructor of the step dialog is recommended.
+	 *
+	 * @param shell     an SWT Shell
+	 * @param meta      description of the step
+	 * @param transMeta description of the the transformation
+	 * @param name      the name of the step
+	 * @return new instance of a dialog for this step
 	 */
-	public StepInterface getStep(StepMeta stepMeta, StepDataInterface stepDataInterface, int cnr, TransMeta transMeta, Trans disp) {
-		return new CoalesceStep(stepMeta, stepDataInterface, cnr, transMeta, disp);
+	public StepDialogInterface getDialog( Shell shell, StepMetaInterface meta, TransMeta transMeta, String name ) {
+		return new CoalesceDialog( shell, meta, transMeta, name );
+	}
+
+	/**
+	 * Called by PDI to get a new instance of the step implementation.
+	 * A standard implementation passing the arguments to the constructor of the step class is recommended.
+	 *
+	 * @param stepMeta          description of the step
+	 * @param stepDataInterface instance of a step data class
+	 * @param cnr               copy number
+	 * @param transMeta         description of the transformation
+	 * @param disp              runtime implementation of the transformation
+	 * @return the new instance of a step implementation
+	 */
+	public StepInterface getStep( StepMeta stepMeta, StepDataInterface stepDataInterface, int cnr, TransMeta transMeta, Trans disp ) {
+		return new CoalesceStep( stepMeta, stepDataInterface, cnr, transMeta, disp );
 	}
 
 	/**
@@ -143,184 +146,170 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 */
 	public StepDataInterface getStepData() {
 		return new CoalesceData();
-	}	
+	}
 
 	/**
 	 * This method is called every time a new step is created and should allocate/set the step configuration
 	 * to sensible defaults. The values set here will be used by Spoon when a new step is created.
 	 */
 	public void setDefault() {
-		allocate(0);
+		allocate( 0 );
 	}
 
 	public String[] getOutputFields() {
 		return outputFields;
 	}
 
-	public void setOutputFields(String[] outputFields) {
-		this.outputFields = outputFields;
+	public String[][] getInputFields() {
+		return inputFields;
 	}
 
-	public String[] getFieldsA() {
-		return fieldsA;
+	public int[] getValueType() {
+		return valueType;
 	}
 
-	public void setFieldsA(String[] fieldsA) {
-		this.fieldsA = fieldsA;
-	}
-
-	public String[] getFieldsB() {
-		return fieldsB;
-	}
-
-	public void setFieldsB(String[] fieldsB) {
-		this.fieldsB = fieldsB;
-	}
-
-	public String[] getFieldsC() {
-		return fieldsC;
-	}
-
-	public void setFieldsC(String[] fieldsC) {
-		this.fieldsC = fieldsC;
+	public boolean[] getDoRemoveInputFields() {
+		return doRemoveInputFields;
 	}
 
 	/**
 	 * This method is used when a step is duplicated in Spoon. It needs to return a deep copy of this
 	 * step meta object. Be sure to create proper deep copies if the step configuration is stored in
 	 * modifiable objects.
-	 * 
+	 *
 	 * See org.pentaho.di.trans.steps.rowgenerator.RowGeneratorMeta.clone() for an example on creating
 	 * a deep copy.
-	 * 
+	 *
 	 * @return a deep copy of this
 	 */
 	public Object clone() {
-		CoalesceMeta retval = (CoalesceMeta) super.clone();
+		CoalesceMeta retVal = (CoalesceMeta) super.clone();
 
-		int nrfields = outputFields.length;
+		int nrFields = outputFields.length;
+		retVal.outputFields = Arrays.copyOf( outputFields, nrFields );
 
-		retval.allocate(nrfields);
-
-		for ( int i = 0; i < nrfields; i++ ) {
-			retval.outputFields[i] = outputFields[i];
-			retval.fieldsA[i] = fieldsA[i];
-			retval.fieldsB[i] = fieldsB[i];
-			retval.fieldsC[i] = fieldsC[i];
+		retVal.inputFields = new String[noInputFields][];
+		for ( int i = 0; i < nrFields; i++ ) {
+			retVal.inputFields[i] = Arrays.copyOf( inputFields[i], inputFields[i].length );
 		}
 
-		return retval;
+		retVal.valueType = Arrays.copyOf( valueType, nrFields );
+		retVal.doRemoveInputFields = Arrays.copyOf( doRemoveInputFields, nrFields );
+
+		return retVal;
 	}
-	
+
 	/**
 	 * This method is called by Spoon when a step needs to serialize its configuration to XML. The expected
-	 * return value is an XML fragment consisting of one or more XML tags.  
-	 * 
+	 * return value is an XML fragment consisting of one or more XML tags.
+	 *
 	 * Please use org.pentaho.di.core.xml.XMLHandler to conveniently generate the XML.
-	 * 
+	 *
 	 * @return a string containing the XML serialization of this step
 	 */
 	public String getXML() throws KettleValueException {
 
-		StringBuffer retval = new StringBuffer( 500 );
+		StringBuilder retVal = new StringBuilder( 500 );
 
-		retval.append( "    <fields>" ).append(Const.CR);
+		retVal.append( "    <fields>" ).append( Const.CR );
 
 		for ( int i = 0; i < outputFields.length; i++ ) {
-			retval.append( "      <field>").append(Const.CR);
-			retval.append( "        " ).append( XMLHandler.addTagValue( "output_field", outputFields[i]));
-			retval.append( "        " ).append( XMLHandler.addTagValue( "field_a" , fieldsA[i] ) );
-			retval.append( "        " ).append( XMLHandler.addTagValue( "field_b" , fieldsB[i] ) );
-			retval.append( "        " ).append( XMLHandler.addTagValue( "field_c" , fieldsC[i] ) );
-			retval.append( "      </field>" ).append(Const.CR);
+			retVal.append( "      <field>" ).append( Const.CR );
+			retVal.append( "        " ).append( XMLHandler.addTagValue( "output_field", outputFields[i] ) );
+			retVal.append( "        " ).append( XMLHandler.addTagValue( "value_type", ValueMeta.getTypeDesc( valueType[i] ) ) );
+			retVal.append( "        " ).append( XMLHandler.addTagValue( "remove", getStringFromBoolean( doRemoveInputFields[i] ) ) );
+			for ( int j = 0; j < noInputFields; j++ ) {
+				retVal.append( "        " ).append( XMLHandler.addTagValue( getInputFieldTag( j ), inputFields[i][j] ) );
+			}
+			retVal.append( "      </field>" ).append( Const.CR );
 		}
+		retVal.append( "    </fields>" ).append( Const.CR );
 
-		retval.append( "    </fields>" ).append(Const.CR);
-
-		return retval.toString();
+		return retVal.toString();
 	}
 
 	/**
 	 * This method is called by PDI when a step needs to load its configuration from XML.
-	 * 
+	 *
 	 * Please use org.pentaho.di.core.xml.XMLHandler to conveniently read from the
 	 * XML node passed in.
-	 * 
-	 * @param stepnode	the XML node containing the configuration
-	 * @param databases	the databases available in the transformation
+	 *
+	 * @param stepnode  the XML node containing the configuration
+	 * @param databases the databases available in the transformation
 	 * @param metaStore the metaStore to optionally read from
 	 */
-	public void loadXML(Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore) throws KettleXMLException {
+	public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
 
 		try {
-			Node fields = XMLHandler.getSubNode(stepnode, "fields");
+			Node fields = XMLHandler.getSubNode( stepnode, "fields" );
 
-			int nrfields = XMLHandler.countNodes( fields, "field" );
-			allocate( nrfields);
+			int noFields = XMLHandler.countNodes( fields, "field" );
+			allocate( noFields );
 
-			for ( int i = 0; i < nrfields; i++ ) {
+			for ( int i = 0; i < noFields; i++ ) {
 				Node line = XMLHandler.getSubNodeByNr( fields, "field", i );
-				outputFields[i] = Const.NVL(XMLHandler.getTagValue(line, "output_field"), "");
-				fieldsA[i] = Const.NVL(XMLHandler.getTagValue(line, "field_a"), "");
-				fieldsB[i] = Const.NVL(XMLHandler.getTagValue(line, "field_b"), "");
-				fieldsC[i] = Const.NVL(XMLHandler.getTagValue(line, "field_c"), "");
+				outputFields[i] = Const.NVL( XMLHandler.getTagValue( line, "output_field" ), "" );
+				valueType[i] = ValueMeta.getType( XMLHandler.getTagValue( line, "value_type" ) );
+				doRemoveInputFields[i] = getBooleanFromString( XMLHandler.getTagValue( line, "remove" ) );
+				for ( int j = 0; j < noInputFields; j++ ) {
+					inputFields[i][j] = Const.NVL( XMLHandler.getTagValue( line, getInputFieldTag( j ) ), "" );
+				}
 			}
-
 		} catch ( Exception e ) {
 			throw new KettleXMLException( BaseMessages.getString(
-					PKG, "CoalesceMeta.Exception.UnableToReadStepInfoFromXML" ), e );
+							PKG, "CoalesceMeta.Exception.UnableToReadStepInfoFromXML" ), e );
 		}
 
-	}	
+	}
+
 	/**
 	 * This method is called by Spoon when a step needs to serialize its configuration to a repository.
 	 * The repository implementation provides the necessary methods to save the step attributes.
 	 *
-	 * @param rep					the repository to save to
-	 * @param metaStore				the metaStore to optionally write to
-	 * @param id_transformation		the id to use for the transformation when saving
-	 * @param id_step				the id to use for the step  when saving
+	 * @param rep               the repository to save to
+	 * @param metaStore         the metaStore to optionally write to
+	 * @param id_transformation the id to use for the transformation when saving
+	 * @param id_step           the id to use for the step  when saving
 	 */
-	public void saveRep(Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step) throws KettleException
-	{
-		try{
-
+	public void saveRep( Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
+		try {
 			for ( int i = 0; i < outputFields.length; i++ ) {
-				rep.saveStepAttribute( id_transformation, id_step, i, "output_field" , outputFields[i] );
-				rep.saveStepAttribute( id_transformation, id_step, i, "field_a", fieldsA[i] );
-				rep.saveStepAttribute( id_transformation, id_step, i, "field_b", fieldsB[i] );
-				rep.saveStepAttribute( id_transformation, id_step, i, "field_c", fieldsC[i] );
+				rep.saveStepAttribute( id_transformation, id_step, i, "output_field", outputFields[i] );
+				rep.saveStepAttribute( id_transformation, id_step, i, "value_type", ValueMeta.getTypeDesc( valueType[i] ) );
+				rep.saveStepAttribute( id_transformation, id_step, i, "remove", getStringFromBoolean( doRemoveInputFields[i] ) );
+				for ( int j = 0; j < noInputFields; j++ ) {
+					rep.saveStepAttribute( id_transformation, id_step, i, getInputFieldTag( j ), inputFields[i][j] );
+				}
 			}
+		} catch ( Exception e ) {
+			throw new KettleException( "Unable to save step into repository: " + id_step, e );
 		}
-		catch(Exception e){
-			throw new KettleException("Unable to save step into repository: "+id_step, e); 
-		}
-	}		
-	
+	}
+
 	/**
 	 * This method is called by PDI when a step needs to read its configuration from a repository.
 	 * The repository implementation provides the necessary methods to read the step attributes.
-	 * 
-	 * @param rep		the repository to read from
-	 * @param metaStore	the metaStore to optionally read from
-	 * @param id_step	the id of the step being read
-	 * @param databases	the databases available in the transformation
+	 *
+	 * @param rep       the repository to read from
+	 * @param metaStore the metaStore to optionally read from
+	 * @param id_step   the id of the step being read
+	 * @param databases the databases available in the transformation
 	 */
-	public void readRep(Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases) throws KettleException  {
-		try{
-
-			int nrFields = rep.countNrStepAttributes(id_step, getRepCode("output_field"));
+	public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
+		try {
+			int nrFields = rep.countNrStepAttributes( id_step, getRepCode( "output_field" ) );
 			allocate( nrFields );
 
 			for ( int i = 0; i < nrFields; i++ ) {
 				outputFields[i] = rep.getStepAttributeString( id_step, i, getRepCode( "output_field" ) );
-				fieldsA[i] = rep.getStepAttributeString( id_step, i, getRepCode( "field_a" ) );
-				fieldsB[i] = rep.getStepAttributeString( id_step, i, getRepCode("field_b"));
-				fieldsC[i] = rep.getStepAttributeString( id_step, i, getRepCode( "field_c" ) );
+				valueType[i] = ValueMeta.getType( rep.getStepAttributeString( id_step, i, getRepCode( "value_type" ) ) );
+				doRemoveInputFields[i] = getBooleanFromString( rep.getStepAttributeString( id_step, i, getRepCode( "remove" ) ) );
+				for ( int j = 0; j < noInputFields; j++ ) {
+					inputFields[i][j] = rep.getStepAttributeString( id_step, i, getRepCode( getInputFieldTag( j ) ) );
+				}
 			}
-		}
-		catch(Exception e){
-			throw new KettleException("Unable to load step from repository", e);
+		} catch ( Exception e ) {
+			throw new KettleException( "Unable to load step from repository", e );
 		}
 	}
 
@@ -329,133 +318,93 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * To that end a RowMetaInterface object is passed in, containing the row-stream structure as it is when entering
 	 * the step. This method must apply any changes the step makes to the row stream. Usually a step adds fields to the
 	 * row-stream.
-	 * 
-	 * @param inputRowMeta		the row structure coming in to the step
-	 * @param name 				the name of the step making the changes
-	 * @param info				row structures of any info steps coming in
-	 * @param nextStep			the description of a step this step is passing rows to
-	 * @param space				the variable space for resolving variables
-	 * @param repository		the repository instance optionally read from
-	 * @param metaStore			the metaStore to optionally read from
+	 *
+	 * @param inputRowMeta the row structure coming in to the step
+	 * @param name         the name of the step making the changes
+	 * @param info         row structures of any info steps coming in
+	 * @param nextStep     the description of a step this step is passing rows to
+	 * @param space        the variable space for resolving variables
+	 * @param repository   the repository instance optionally read from
+	 * @param metaStore    the metaStore to optionally read from
 	 */
-	public void getFields(RowMetaInterface inputRowMeta, String name, RowMetaInterface[] info, StepMeta nextStep,
-						  VariableSpace space, Repository repository, IMetaStore metaStore) throws KettleStepException{
-
+	public void getFields( RowMetaInterface inputRowMeta, String name, RowMetaInterface[] info, StepMeta nextStep,
+					VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
 		try {
+			for ( int i = 0; i < outputFields.length; i++ ) {
+				int type = valueType[i];
+				if ( type == ValueMeta.TYPE_NONE ) {
+					type = getDefaultValueType( inputRowMeta, i );
+				}
 
-			for(int i = 0; i < outputFields.length; i++){
-				int valueType = retrieveNewFieldValueMeta(inputRowMeta, i);
-				ValueMetaInterface v = ValueMetaFactory.createValueMeta(outputFields[i], valueType);
-
+				// additional fields
+				ValueMetaInterface v = ValueMetaFactory.createValueMeta( outputFields[i], type );
 				v.setOrigin( name );
-				inputRowMeta.addValueMeta(v);
+				inputRowMeta.addValueMeta( v );
+
+				// remove fields from stream
+				if ( doRemoveInputFields[i] ) {
+					for ( int j = 0; j < noInputFields; j++ ) {
+						if ( inputRowMeta.indexOfValue( inputFields[i][j] ) != -1 ) {
+							inputRowMeta.removeValueMeta( inputFields[i][j] );
+						}
+					}
+				}
 			}
-
-		} catch (Exception e){
-			throw new KettleStepException(e);
-		}
-		
-	}
-
-	/**
-	 * If all 3 fields are of the same data type then the output field should mirror this to avoid adding additional step to change type
-	 * otherwise return a more generic String type
-	 */
-	private int retrieveNewFieldValueMeta(RowMetaInterface inputRowMeta, int rowIndex) throws Exception{
-
-		Integer valueType;
-		Integer typeOfA = null;
-		Integer typeOfB = null;
-		Integer typeOfC = null;
-
-		int index = inputRowMeta.indexOfValue(fieldsA[rowIndex]);
-		if(index != -1){
-			typeOfA = inputRowMeta.getValueMeta(index).getType();
-		}
-
-		index = inputRowMeta.indexOfValue(fieldsB[rowIndex]);
-		if(index != -1){
-			typeOfB = inputRowMeta.getValueMeta(index).getType();
-		}
-
-		if((valueType = compareTwoTypes(typeOfA, typeOfB)) == STRING_AS_DEFAULT){
-			return ValueMetaInterface.TYPE_STRING;
-		}
-
-		index = inputRowMeta.indexOfValue(fieldsC[rowIndex]);
-		if(index != -1){
-			typeOfC = inputRowMeta.getValueMeta(index).getType();
-		}
-
-		if((valueType = compareTwoTypes(valueType, typeOfC)) == STRING_AS_DEFAULT){
-			return ValueMetaInterface.TYPE_STRING;
-		} else {
-			return valueType;
-		}
-	}
-
-	private Integer compareTwoTypes(Integer a, Integer b) {
-		if(a == null){
-			return b;
-		} else {
-			if(b == null){
-				return a;
-			}
-			return a.equals(b) ? a : STRING_AS_DEFAULT;
+		} catch ( Exception e ) {
+			throw new KettleStepException( e );
 		}
 	}
 
 	/**
-	 * This method is called when the user selects the "Verify Transformation" option in Spoon. 
+	 * This method is called when the user selects the "Verify Transformation" option in Spoon.
 	 * A list of remarks is passed in that this method should add to. Each remark is a comment, warning, error, or ok.
 	 * The method should perform as many checks as necessary to catch design-time errors.
-	 * 
+	 *
 	 * Typical checks include:
 	 * - verify that all mandatory configuration is given
 	 * - verify that the step receives any input, unless it's a row generating step
 	 * - verify that the step does not receive any input if it does not take them into account
 	 * - verify that the step finds fields it relies on in the row-stream
-	 * 
-	 *   @param remarks		the list of remarks to append to
-	 *   @param transMeta	the description of the transformation
-	 *   @param stepMeta	the description of the step
-	 *   @param prev		the structure of the incoming row-stream
-	 *   @param input		names of steps sending input to the step
-	 *   @param output		names of steps this step is sending output to
-	 *   @param info		fields coming in from info steps 
-	 *   @param metaStore	metaStore to optionally read from
+	 *
+	 * @param remarks   the list of remarks to append to
+	 * @param transMeta the description of the transformation
+	 * @param stepMeta  the description of the step
+	 * @param prev      the structure of the incoming row-stream
+	 * @param input     names of steps sending input to the step
+	 * @param output    names of steps this step is sending output to
+	 * @param info      fields coming in from info steps
+	 * @param metaStore metaStore to optionally read from
 	 */
-	public void check(List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta,
-					  RowMetaInterface prev, String input[], String output[], RowMetaInterface info,
-					  VariableSpace space, Repository repository, IMetaStore metaStore)  {
-		
+	public void check( List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta,
+					RowMetaInterface prev, String input[], String output[], RowMetaInterface info,
+					VariableSpace space, Repository repository, IMetaStore metaStore ) {
+
 		CheckResult cr;
 
 		// See if there are input streams leading to this step!
-		if (input.length > 0) {
-			cr = new CheckResult(CheckResult.TYPE_RESULT_OK,
-					BaseMessages.getString(PKG, "CoalesceMeta.CheckResult.ReceivingRows.OK"), stepMeta);
+		if ( input.length > 0 ) {
+			cr = new CheckResult( CheckResult.TYPE_RESULT_OK,
+							BaseMessages.getString( PKG, "CoalesceMeta.CheckResult.ReceivingRows.OK" ), stepMeta );
 		} else {
-			cr = new CheckResult(CheckResult.TYPE_RESULT_ERROR,
-					BaseMessages.getString(PKG, "CoalesceMeta.CheckResult.ReceivingRows.ERROR"), stepMeta);
+			cr = new CheckResult( CheckResult.TYPE_RESULT_ERROR,
+							BaseMessages.getString( PKG, "CoalesceMeta.CheckResult.ReceivingRows.ERROR" ), stepMeta );
 		}
-		remarks.add(cr);
-
+		remarks.add( cr );
 
 		// See if there are missing input streams
 		String errorMessage = "";
 		for ( int i = 0; i < outputFields.length; i++ ) {
 
-			ValueMetaInterface fA = prev.searchValueMeta( fieldsA[i] );
-			ValueMetaInterface fB = prev.searchValueMeta( fieldsB[i] );
-			ValueMetaInterface fC = prev.searchValueMeta( fieldsC[i] );
+			String missingFields = "";
+			for ( int j = 0; j < noInputFields; j++ ) {
+				ValueMetaInterface vmi = prev.searchValueMeta( inputFields[i][j] );
 
-			String missingFields =
-					  ((!fieldsA[i].isEmpty() && fA == null) ? fieldsA[i] + Const.CR : "")
-					+ ((!fieldsB[i].isEmpty() && fB == null) ? fieldsB[i] + Const.CR : "")
-					+ ((!fieldsC[i].isEmpty() && fC == null) ? fieldsC[i] + Const.CR : "");
+				if ( inputFields[i][j].isEmpty() && vmi == null ) {
+					missingFields += inputFields[i][j] + Const.CR;
+				}
+			}
 
-			if ( !missingFields.isEmpty()) {
+			if ( !missingFields.isEmpty() ) {
 				errorMessage = BaseMessages.getString( PKG, "CoalesceMeta.CheckResult.MissingInStreamFields" ) +
 								Const.CR + "\t\t" + missingFields;
 				break;
@@ -470,11 +419,68 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 		remarks.add( cr );
 	}
 
-	void allocate( int nrFields ) {
-		outputFields = new String[nrFields];
-		fieldsA = new String[nrFields];
-		fieldsB = new String[nrFields];
-		fieldsC = new String[nrFields];
+	void allocate( int noOutputFields ) {
+		outputFields = new String[noOutputFields];
+		inputFields = new String[noOutputFields][noInputFields];
+		valueType = new int[noOutputFields];
+		doRemoveInputFields = new boolean[noOutputFields];
 	}
 
+	static String getStringFromBoolean( boolean b ) {
+		return b ? BaseMessages.getString( PKG, "System.Combo.Yes" )
+						: BaseMessages.getString( PKG, "System.Combo.No" );
+	}
+
+	static boolean getBooleanFromString( String s ) {
+		return BaseMessages.getString( PKG, "System.Combo.Yes" ).equals( s );
+	}
+
+	/**
+	 * If all 3 fields are of the same data type then the output field should mirror this
+	 * otherwise return a more generic String type
+	 */
+	private int getDefaultValueType( RowMetaInterface inputRowMeta, int rowIndex ) throws Exception {
+
+		Integer valueType = null;
+		int i = 0;
+		do {
+			if ( i == 0 ) {
+				valueType = getInputFieldValueType( inputRowMeta, rowIndex, i++ );
+			}
+			Integer type = getInputFieldValueType( inputRowMeta, rowIndex, i );
+
+			if ( ( valueType = getResultingType( valueType, type ) ) == STRING_AS_DEFAULT ) {
+				return ValueMetaInterface.TYPE_STRING;
+			}
+		} while ( ++i < noInputFields );
+
+		return valueType;
+	}
+
+	/**
+	 * extracts the ValueMeta type of an input field,
+	 * returns null if the field is not present in the input stream
+	 */
+	private Integer getInputFieldValueType( RowMetaInterface inputRowMeta, int rowIndex, int inputIndex ) {
+		int index = inputRowMeta.indexOfValue( inputFields[rowIndex][inputIndex] );
+		if ( index > 0 ) {
+			return inputRowMeta.getValueMeta( index ).getType();
+		}
+		return null;
+	}
+
+	private Integer getResultingType( Integer typeA, Integer typeB ) {
+		if ( typeA == null ) {
+			return typeB;
+		} else {
+			if ( typeB == null ) {
+				return typeA;
+			}
+			return typeA.equals( typeB ) ? typeA : STRING_AS_DEFAULT;
+		}
+	}
+
+	private String getInputFieldTag( int index ) {
+		return "input_field_" + (char) ( 'a' + index );
+	}
 }

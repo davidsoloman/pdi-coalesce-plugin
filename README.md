@@ -1,7 +1,6 @@
 # Coalesce Step - PDI Plugin
 
-This is a kettle transformation step which selects the first non null value from the input and passes it as output
-
+This step allows you to select the first non null value from a set of given fields <br>
 Click [here](http://www.w3resource.com/mysql/comparision-functions-and-operators/coalesce-function.php) for an example of MySql Coalesce function
 
 ## Help

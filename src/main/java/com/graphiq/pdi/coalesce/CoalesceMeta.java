@@ -159,17 +159,29 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	public String[] getOutputFields() {
 		return outputFields;
 	}
+	public void setOutputFields( String[] outputFields ) {
+		this.outputFields = outputFields;
+	}
 
 	public String[][] getInputFields() {
 		return inputFields;
+	}
+	public void setInputFields( String[][] inputFields ) {
+		this.inputFields = inputFields;
 	}
 
 	public int[] getValueType() {
 		return valueType;
 	}
+	public void setValueType( int[] valueType ) {
+		this.valueType = valueType;
+	}
 
 	public boolean[] getDoRemoveInputFields() {
 		return doRemoveInputFields;
+	}
+	public void setDoRemoveInputFields( boolean[] doRemoveInputFields ) {
+		this.doRemoveInputFields = doRemoveInputFields;
 	}
 
 	/**

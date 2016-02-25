@@ -219,10 +219,10 @@ public class CoalesceStep extends BaseStep implements StepInterface {
 
 			ValueMetaInterface vm = data.outputRowMeta.getValueMeta( outputIndex );
 			try {
-				data.outputRowValues[outputIndex] = inputIndex < 0 ? null : vm.convertDataCompatible( vm, r[inputIndex] );
+				data.outputRowValues[outputIndex] = inputIndex < 0 ? null : vm.convertData( inputRowMeta.getValueMeta( inputIndex ), r[inputIndex] );
 			} catch ( KettleValueException e ) {
 				logError( BaseMessages.getString( PKG, "CoalesceStep.Log.DataIncompatibleError",
-								r[inputIndex].toString(), inputRowMeta.getValueMeta( inputIndex ).toString(), vm.toString() ) );
+					r[inputIndex].toString(), inputRowMeta.getValueMeta( inputIndex ).toString(), vm.toString() ) );
 				throw e;
 			}
 		}

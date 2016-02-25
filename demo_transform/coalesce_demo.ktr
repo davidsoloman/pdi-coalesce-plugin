@@ -93,19 +93,19 @@
     <fields>
       <field>
         <output_field>phone</output_field>
+        <value_type>String</value_type>
+        <remove>N</remove>
         <input_field_a>Business_Phone</input_field_a>
         <input_field_b>Cell_Phone</input_field_b>
         <input_field_c>Home_Phone</input_field_c>
-        <value_type>String</value_type>
-        <remove>N</remove>
       </field>
       <field>
         <output_field>phone and info</output_field>
+        <value_type>String</value_type>
+        <remove>N</remove>
         <input_field_a>Cell_Phone</input_field_a>
         <input_field_b>Home_Phone</input_field_b>
         <input_field_c>Phone_is_private</input_field_c>
-        <value_type>String</value_type>
-        <remove>N</remove>
       </field>
     </fields>
      <cluster_schema/>

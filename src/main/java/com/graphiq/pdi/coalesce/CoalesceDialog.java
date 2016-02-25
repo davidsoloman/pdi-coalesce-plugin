@@ -1,10 +1,4 @@
-/*! ******************************************************************************
-*
-* Pentaho Data Integration
-*
-* Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
-*
-*******************************************************************************
+/*******************************************************************************
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -52,21 +46,6 @@ import org.pentaho.di.trans.step.StepDialogInterface;
 
 import java.util.*;
 
-/**
- * This class is part of the demo step plug-in implementation.
- * It demonstrates the basics of developing a plug-in step for PDI.
- *
- * The demo step adds a new string field to the row stream and sets its
- * value to "Hello World!". The user may select the name of the new field.
- *
- * This class is the implementation of StepDialogInterface.
- * Classes implementing this interface need to:
- *
- * - build and open a SWT dialog displaying the step's settings (stored in the step's meta object)
- * - write back any changes the user makes to the step's meta object
- * - report whether the user changed any settings when confirming the dialog
- *
- */
 public class CoalesceDialog extends BaseStepDialog implements StepDialogInterface {
 
 	/**
@@ -93,17 +72,16 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 					"https://github.com/graphiq-data/pdi-coalesce-plugin/blob/master/help.md";
 
 	/**
-	 * The constructor should simply invoke super() and save the incoming meta
-	 * object to a local variable, so it can conveniently read and write settings
-	 * from/to it.
+	 * Constructor that saves incoming meta object to a local variable,
+	 *  so it can conveniently read and write settings from/to it.
 	 *
 	 * @param parent    the SWT shell to open the dialog in
 	 * @param in        the meta object holding the step's settings
 	 * @param transMeta transformation description
-	 * @param sname     the step name
+	 * @param sName     the step name
 	 */
-	public CoalesceDialog( Shell parent, Object in, TransMeta transMeta, String sname ) {
-		super( parent, (BaseStepMeta) in, transMeta, sname );
+	public CoalesceDialog( Shell parent, Object in, TransMeta transMeta, String sName ) {
+		super( parent, (BaseStepMeta) in, transMeta, sName );
 		meta = (CoalesceMeta) in;
 
 		allInputStreamFields = new HashMap<String, Integer>();
@@ -111,18 +89,18 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 
 	/**
 	 * This method is called by Spoon when the user opens the settings dialog of the step.
-	 * It should open the dialog and return only once the dialog has been closed by the user.
+	 * It opens the dialog and returns only once the dialog has been closed by the user.
 	 *
-	 * If the user confirms the dialog, the meta object (passed in the constructor) must
-	 * be updated to reflect the new step settings. The changed flag of the meta object must
+	 * If the user confirms the dialog, the meta object (passed in the constructor)
+	 * is updated to reflect the new step settings. The changed flag of the meta object
 	 * reflect whether the step configuration was changed by the dialog.
 	 *
-	 * If the user cancels the dialog, the meta object must not be updated, and its changed flag
-	 * must remain unaltered.
+	 * If the user cancels the dialog, the meta object is not updated
 	 *
-	 * The open() method must return the name of the step after the user has confirmed the dialog,
+	 * The open() method returns the name of the step after the user has confirmed the dialog,
 	 * or null if the user cancelled the dialog.
 	 */
+	@Override
 	public String open() {
 
 		// store some convenient SWT variables 
@@ -194,9 +172,15 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		// restore the changed flag to original value, as the modify listeners fire during dialog population 
 		meta.setChanged( changed );
 
-		// open dialog
+		// open dialog and enter event loop
 		shell.open();
+		while (!shell.isDisposed()) {
+			if (!display.readAndDispatch())
+				display.sleep();
+		}
 
+		// at this point the dialog has closed, so either ok() or cancel() have been executed
+		// The "stepname" variable is inherited from BaseStepDialog
 		return stepname;
 	}
 
@@ -207,7 +191,7 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 	}
 
 	/**
-	 * This helper method puts the step configuration stored in the meta object
+	 * This helper method takes the step configuration stored in the meta object
 	 * and puts it into the dialog controls.
 	 */
 	private void populateDialog() {
@@ -260,16 +244,20 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		dispose();
 	}
 
+	/**
+	 * This helper method takes the information configured in the dialog controls
+	 * and stores it into the step configuration meta object
+	 */
 	private void populateMetaWithInfo() {
-		int nrkeys = wFields.nrNonEmpty();
+		int noKeys = wFields.nrNonEmpty();
 
-		meta.allocate( nrkeys );
+		meta.allocate( noKeys );
 		if ( log.isDebug() ) {
-			logDebug( BaseMessages.getString( PKG, "CoalesceDialog.Log.FoundFields", String.valueOf( nrkeys ) ) );
+			logDebug( BaseMessages.getString( PKG, "CoalesceDialog.Log.FoundFields", String.valueOf( noKeys ) ) );
 		}
 
 		//CHECKSTYLE:Indentation:OFF
-		for ( int i = 0; i < nrkeys; i++ ) {
+		for ( int i = 0; i < noKeys; i++ ) {
 			TableItem item = wFields.getNonEmpty( i );
 			meta.getOutputFields()[i] = item.getText( 1 );
 
@@ -391,17 +379,6 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 			}
 		};
 		new Thread( runnable ).start();
-
-		wFields.addModifyListener( new ModifyListener() {
-			public void modifyText( ModifyEvent arg0 ) {
-				// Now set the combo's
-				shell.getDisplay().asyncExec( new Runnable() {
-					public void run() {
-						setComboBoxes();
-					}
-				} );
-			}
-		} );
 	}
 
 	private void setComboBoxes() {

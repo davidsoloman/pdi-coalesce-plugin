@@ -1,10 +1,4 @@
-/*! ******************************************************************************
-*
-* Pentaho Data Integration
-*
-* Copyright (C) 2002-2013 by Pentaho : http://www.pentaho.com
-*
-*******************************************************************************
+/******************************************************************************
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with
@@ -55,24 +49,6 @@ import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.metastore.api.IMetaStore;
 import org.w3c.dom.Node;
 
-/**
- * This class is part of the demo step plug-in implementation.
- * It demonstrates the basics of developing a plug-in step for PDI.
- *
- * The demo step adds a new string field to the row stream and sets its
- * value to "Hello World!". The user may select the name of the new field.
- *
- * This class is the implementation of StepMetaInterface.
- * Classes implementing this interface need to:
- *
- * - keep track of the step settings
- * - serialize step settings both to xml and a repository
- * - provide new instances of objects implementing StepDialogInterface, StepInterface and StepDataInterface
- * - report on how the step modifies the meta-data of the row-stream (row structure and field types)
- * - perform a sanity-check on the settings provided by the user
- *
- */
-
 @Step(
 		id = "CoalesceStep",
 		image = "coalesce.svg",
@@ -105,9 +81,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	private int[] valueType;
 	private boolean[] doRemoveInputFields;
 
-	/**
-	 * Constructor should call super() to make sure the base class has a chance to initialize properly.
-	 */
+
 	public CoalesceMeta() {
 		super();
 	}
@@ -137,6 +111,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * @param disp              runtime implementation of the transformation
 	 * @return the new instance of a step implementation
 	 */
+	@Override
 	public StepInterface getStep( StepMeta stepMeta, StepDataInterface stepDataInterface, int cnr, TransMeta transMeta, Trans disp ) {
 		return new CoalesceStep( stepMeta, stepDataInterface, cnr, transMeta, disp );
 	}
@@ -144,6 +119,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	/**
 	 * Called by PDI to get a new instance of the step data class.
 	 */
+	@Override
 	public StepDataInterface getStepData() {
 		return new CoalesceData();
 	}
@@ -152,6 +128,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * This method is called every time a new step is created and should allocate/set the step configuration
 	 * to sensible defaults. The values set here will be used by Spoon when a new step is created.
 	 */
+	@Override
 	public void setDefault() {
 		allocate( 0 );
 	}
@@ -186,14 +163,11 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 
 	/**
 	 * This method is used when a step is duplicated in Spoon. It needs to return a deep copy of this
-	 * step meta object. Be sure to create proper deep copies if the step configuration is stored in
-	 * modifiable objects.
-	 *
-	 * See org.pentaho.di.trans.steps.rowgenerator.RowGeneratorMeta.clone() for an example on creating
-	 * a deep copy.
+	 * step meta object.
 	 *
 	 * @return a deep copy of this
 	 */
+	@Override
 	public Object clone() {
 		CoalesceMeta retVal = (CoalesceMeta) super.clone();
 
@@ -215,10 +189,9 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * This method is called by Spoon when a step needs to serialize its configuration to XML. The expected
 	 * return value is an XML fragment consisting of one or more XML tags.
 	 *
-	 * Please use org.pentaho.di.core.xml.XMLHandler to conveniently generate the XML.
-	 *
 	 * @return a string containing the XML serialization of this step
 	 */
+	@Override
 	public String getXML() throws KettleValueException {
 
 		StringBuilder retVal = new StringBuilder( 500 );
@@ -243,13 +216,11 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	/**
 	 * This method is called by PDI when a step needs to load its configuration from XML.
 	 *
-	 * Please use org.pentaho.di.core.xml.XMLHandler to conveniently read from the
-	 * XML node passed in.
-	 *
 	 * @param stepnode  the XML node containing the configuration
 	 * @param databases the databases available in the transformation
 	 * @param metaStore the metaStore to optionally read from
 	 */
+	@Override
 	public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
 
 		try {
@@ -283,6 +254,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * @param id_transformation the id to use for the transformation when saving
 	 * @param id_step           the id to use for the step  when saving
 	 */
+	@Override
 	public void saveRep( Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
 		try {
 			for ( int i = 0; i < outputFields.length; i++ ) {
@@ -307,6 +279,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * @param id_step   the id of the step being read
 	 * @param databases the databases available in the transformation
 	 */
+	@Override
 	public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
 		try {
 			int nrFields = rep.countNrStepAttributes( id_step, getRepCode( "output_field" ) );
@@ -327,9 +300,6 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 
 	/**
 	 * This method is called to determine the changes the step is making to the row-stream.
-	 * To that end a RowMetaInterface object is passed in, containing the row-stream structure as it is when entering
-	 * the step. This method must apply any changes the step makes to the row stream. Usually a step adds fields to the
-	 * row-stream.
 	 *
 	 * @param inputRowMeta the row structure coming in to the step
 	 * @param name         the name of the step making the changes
@@ -339,6 +309,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * @param repository   the repository instance optionally read from
 	 * @param metaStore    the metaStore to optionally read from
 	 */
+	@Override
 	public void getFields( RowMetaInterface inputRowMeta, String name, RowMetaInterface[] info, StepMeta nextStep,
 					VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
 		try {
@@ -369,14 +340,6 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 
 	/**
 	 * This method is called when the user selects the "Verify Transformation" option in Spoon.
-	 * A list of remarks is passed in that this method should add to. Each remark is a comment, warning, error, or ok.
-	 * The method should perform as many checks as necessary to catch design-time errors.
-	 *
-	 * Typical checks include:
-	 * - verify that all mandatory configuration is given
-	 * - verify that the step receives any input, unless it's a row generating step
-	 * - verify that the step does not receive any input if it does not take them into account
-	 * - verify that the step finds fields it relies on in the row-stream
 	 *
 	 * @param remarks   the list of remarks to append to
 	 * @param transMeta the description of the transformation
@@ -387,6 +350,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	 * @param info      fields coming in from info steps
 	 * @param metaStore metaStore to optionally read from
 	 */
+	@Override
 	public void check( List<CheckResultInterface> remarks, TransMeta transMeta, StepMeta stepMeta,
 					RowMetaInterface prev, String input[], String output[], RowMetaInterface info,
 					VariableSpace space, Repository repository, IMetaStore metaStore ) {

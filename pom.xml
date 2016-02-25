@@ -4,7 +4,7 @@
 
 	<groupId>com.graphiq.pdi</groupId>
 	<artifactId>coalesceplugin</artifactId>
-	<version>0.0.1</version>
+	<version>1.0.0-BETA</version>
 	<name>CoalescePlugin</name>
 
 	<repositories>
@@ -50,11 +50,6 @@
 			<groupId>pentaho-kettle</groupId>
 			<artifactId>kettle-test</artifactId>
 			<version>4.4.3.3</version>
-		</dependency>
-		<dependency>
-			<groupId>pentaho-kettle</groupId>
-			<artifactId>kettle-engine-test</artifactId>
-			<version>5.4.0.9-162</version>
 		</dependency>
 	</dependencies>
 

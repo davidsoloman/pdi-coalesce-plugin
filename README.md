@@ -1,5 +1,7 @@
 # Coalesce Step - PDI Plugin
 
+[![Build Status](https://travis-ci.org/graphiq-data/pdi-coalesce-plugin.svg?branch=master)](https://travis-ci.org/graphiq-data/pdi-coalesce-plugin)
+
 This step allows you to select the first non null value from a set of given fields <br>
 Click [here](http://www.w3resource.com/mysql/comparision-functions-and-operators/coalesce-function.php) for an example of MySql Coalesce function
 

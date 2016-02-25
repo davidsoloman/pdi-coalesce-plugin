@@ -118,7 +118,7 @@
 			<resource>
 				<directory>src/main/resources</directory>
 				<includes> <!--Required to explicitly include resources to jar to accommodate legacy resource bundle -->
-					<include>**.png</include>
+					<include>**.svg</include>
 				</includes>
 			</resource>
 

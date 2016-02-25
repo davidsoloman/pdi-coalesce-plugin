@@ -75,7 +75,7 @@ import org.w3c.dom.Node;
 
 @Step(
 		id = "CoalesceStep",
-		image = "coalesce.png",
+		image = "coalesce.svg",
 		i18nPackageName="com.graphiq.pdi.coalesce",
 		name="Coalesce.Name",
 		description = "Coalesce.TooltipDesc",

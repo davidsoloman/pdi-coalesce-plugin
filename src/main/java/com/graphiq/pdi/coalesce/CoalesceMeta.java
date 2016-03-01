@@ -19,7 +19,6 @@ package com.graphiq.pdi.coalesce;
 import java.util.Arrays;
 import java.util.List;
 
-import org.eclipse.swt.widgets.Shell;
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
 import org.pentaho.di.core.Const;
@@ -42,7 +41,6 @@ import org.pentaho.di.trans.Trans;
 import org.pentaho.di.trans.TransMeta;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDataInterface;
-import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
@@ -84,20 +82,6 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 
 	public CoalesceMeta() {
 		super();
-	}
-
-	/**
-	 * Called by Spoon to get a new instance of the SWT dialog for the step.
-	 * A standard implementation passing the arguments to the constructor of the step dialog is recommended.
-	 *
-	 * @param shell     an SWT Shell
-	 * @param meta      description of the step
-	 * @param transMeta description of the the transformation
-	 * @param name      the name of the step
-	 * @return new instance of a dialog for this step
-	 */
-	public StepDialogInterface getDialog( Shell shell, StepMetaInterface meta, TransMeta transMeta, String name ) {
-		return new CoalesceDialog( shell, meta, transMeta, name );
 	}
 
 	/**
@@ -313,18 +297,11 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	public void getFields( RowMetaInterface inputRowMeta, String name, RowMetaInterface[] info, StepMeta nextStep,
 					VariableSpace space, Repository repository, IMetaStore metaStore ) throws KettleStepException {
 		try {
+			// store the input stream meta
+			RowMetaInterface unalteredInputRowMeta = inputRowMeta.clone();
+
+			// first remove all unwanted input fields from the stream
 			for ( int i = 0; i < outputFields.length; i++ ) {
-				int type = valueType[i];
-				if ( type == ValueMeta.TYPE_NONE ) {
-					type = getDefaultValueType( inputRowMeta, i );
-				}
-
-				// additional fields
-				ValueMetaInterface v = ValueMetaFactory.createValueMeta( outputFields[i], type );
-				v.setOrigin( name );
-				inputRowMeta.addValueMeta( v );
-
-				// remove fields from stream
 				if ( doRemoveInputFields[i] ) {
 					for ( int j = 0; j < noInputFields; j++ ) {
 						if ( inputRowMeta.indexOfValue( inputFields[i][j] ) != -1 ) {
@@ -332,6 +309,18 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 						}
 					}
 				}
+			}
+
+			// then add the output fields
+			for ( int i = 0; i < outputFields.length; i++ ) {
+				int type = valueType[i];
+				if ( type == ValueMeta.TYPE_NONE ) {
+					type = getDefaultValueType( unalteredInputRowMeta, i );
+				}
+
+				ValueMetaInterface v = ValueMetaFactory.createValueMeta( outputFields[i], type );
+				v.setOrigin( name );
+				inputRowMeta.addValueMeta( v );
 			}
 		} catch ( Exception e ) {
 			throw new KettleStepException( e );

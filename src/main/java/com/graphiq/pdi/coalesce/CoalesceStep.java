@@ -32,6 +32,7 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 
@@ -133,21 +134,16 @@ public class CoalesceStep extends BaseStep implements StepInterface {
 	 * reflect the Value Type option, or in case it was None to reflect on the default data type logic.
 	 */
 	private void buildResult( CoalesceMeta meta, CoalesceData data, Object[] r ) throws KettleException {
-		data.outputRowValues = new Object[data.outputRowMeta.size()];
 
-		//copy only rows that also pass as output
 		RowMetaInterface inputRowMeta = getInputRowMeta();
-		for ( int i = 0; i < inputRowMeta.size(); i++ ) {
-			int outputIndex = data.outputRowMeta.indexOfValue( inputRowMeta.getFieldNames()[i] );
-			if ( outputIndex >= 0 ) {
-				data.outputRowValues[outputIndex] = r[i];
-			}
-		}
+
+		// copies r into outputRowValues and pads extra null-default slots for the output values
+		data.outputRowValues = Arrays.copyOf(r, data.outputRowMeta.size());
 
 		//add extra field values to the output
 		for ( int i = 0; i < meta.getOutputFields().length; i++ ) {
 			int inputIndex = getFirstNonNullValueIndex( meta, inputRowMeta, r, i );
-			int outputIndex = data.outputRowMeta.indexOfValue( meta.getOutputFields()[i] );
+			int outputIndex = data.outputRowMeta.size() - meta.getOutputFields().length + i;
 
 			ValueMetaInterface vm = data.outputRowMeta.getValueMeta( outputIndex );
 			try {

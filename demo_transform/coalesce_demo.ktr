@@ -90,6 +90,7 @@
            <method>none</method>
            <schema_name/>
            </partitioning>
+    <empty_is_null>N</empty_is_null>
     <fields>
       <field>
         <output_field>phone</output_field>

@@ -79,6 +79,10 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	private int[] valueType;
 	private boolean[] doRemoveInputFields;
 
+	/**
+	 * additional options
+	 */
+	private boolean treatEmptyStringsAsNulls;
 
 	public CoalesceMeta() {
 		super();
@@ -145,6 +149,13 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 		this.doRemoveInputFields = doRemoveInputFields;
 	}
 
+	public boolean isTreatEmptyStringsAsNulls() {
+		return treatEmptyStringsAsNulls;
+	}
+	public void setTreatEmptyStringsAsNulls( boolean treatEmptyStringsAsNulls ) {
+		this.treatEmptyStringsAsNulls = treatEmptyStringsAsNulls;
+	}
+
 	/**
 	 * This method is used when a step is duplicated in Spoon. It needs to return a deep copy of this
 	 * step meta object.
@@ -180,8 +191,9 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 
 		StringBuilder retVal = new StringBuilder( 500 );
 
-		retVal.append( "    <fields>" ).append( Const.CR );
+		retVal.append( "    " + XMLHandler.addTagValue( "empty_is_null", treatEmptyStringsAsNulls ) );
 
+		retVal.append( "    <fields>" ).append( Const.CR );
 		for ( int i = 0; i < outputFields.length; i++ ) {
 			retVal.append( "      <field>" ).append( Const.CR );
 			retVal.append( "        " ).append( XMLHandler.addTagValue( "output_field", outputFields[i] ) );
@@ -200,16 +212,17 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	/**
 	 * This method is called by PDI when a step needs to load its configuration from XML.
 	 *
-	 * @param stepnode  the XML node containing the configuration
+	 * @param stepNode  the XML node containing the configuration
 	 * @param databases the databases available in the transformation
 	 * @param metaStore the metaStore to optionally read from
 	 */
 	@Override
-	public void loadXML( Node stepnode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
+	public void loadXML( Node stepNode, List<DatabaseMeta> databases, IMetaStore metaStore ) throws KettleXMLException {
 
 		try {
-			Node fields = XMLHandler.getSubNode( stepnode, "fields" );
+			treatEmptyStringsAsNulls = "Y".equalsIgnoreCase( XMLHandler.getTagValue( stepNode, "empty_is_null" ) );
 
+			Node fields = XMLHandler.getSubNode( stepNode, "fields" );
 			int noFields = XMLHandler.countNodes( fields, "field" );
 			allocate( noFields );
 
@@ -241,6 +254,8 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	@Override
 	public void saveRep( Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
 		try {
+			rep.saveStepAttribute( id_transformation, id_step, "empty_is_null", treatEmptyStringsAsNulls );
+
 			for ( int i = 0; i < outputFields.length; i++ ) {
 				rep.saveStepAttribute( id_transformation, id_step, i, "output_field", outputFields[i] );
 				rep.saveStepAttribute( id_transformation, id_step, i, "value_type", ValueMeta.getTypeDesc( valueType[i] ) );
@@ -266,6 +281,8 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 	@Override
 	public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
 		try {
+			treatEmptyStringsAsNulls = rep.getStepAttributeBoolean( id_step, getRepCode( "empty_is_null" ) );
+
 			int nrFields = rep.countNrStepAttributes( id_step, getRepCode( "output_field" ) );
 			allocate( nrFields );
 

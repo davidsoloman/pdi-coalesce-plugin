@@ -20,7 +20,6 @@ import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.Trans;
@@ -164,9 +163,9 @@ public class CoalesceStep extends BaseStep implements StepInterface {
 		for ( int i = 0; i < CoalesceMeta.noInputFields; i++ ) {
 			int index = inputRowMeta.indexOfValue( meta.getInputFields()[transIndex][i] );
 			if ( index >= 0 ) {
-				if ( ValueMeta.EMPTY_STRING_AND_NULL_ARE_DIFFERENT && r[index] != null ) {
+				if ( !meta.isTreatEmptyStringsAsNulls() && r[index] != null ) {
 					return index;
-				} else if ( !ValueMeta.EMPTY_STRING_AND_NULL_ARE_DIFFERENT && r[index] != null && !Const.isEmpty( r[index].toString() ) ) {
+				} else if ( meta.isTreatEmptyStringsAsNulls() && r[index] != null && !Const.isEmpty( r[index].toString() ) ) {
 					return index;
 				}
 			}

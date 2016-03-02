@@ -60,6 +60,7 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 	// the dialog writes the settings to it when confirmed 
 	private CoalesceMeta meta;
 
+	private Button wEmptyStringsCheck;
 	private TableView wFields;
 	private ColumnInfo[] columnInfos;
 
@@ -141,6 +142,9 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		// Stepname line
 		setStepName( middle, margin, lsMod );
 
+		// Spaces and Nulls
+		setEmptyStringsAndNullsCheck( middle, margin );
+
 		// Column infos
 		setTable( margin, lsMod );
 
@@ -195,6 +199,8 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 	 * and puts it into the dialog controls.
 	 */
 	private void populateDialog() {
+		wEmptyStringsCheck.setSelection( meta.isTreatEmptyStringsAsNulls() );
+
 		if ( meta.getOutputFields() != null ) {
 			for ( int i = 0; i < meta.getOutputFields().length; i++ ) {
 				TableItem item = wFields.table.getItem( i );
@@ -249,8 +255,9 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 	 * and stores it into the step configuration meta object
 	 */
 	private void populateMetaWithInfo() {
-		int noKeys = wFields.nrNonEmpty();
+		meta.setTreatEmptyStringsAsNulls( wEmptyStringsCheck.getSelection() );
 
+		int noKeys = wFields.nrNonEmpty();
 		meta.allocate( noKeys );
 		if ( log.isDebug() ) {
 			logDebug( BaseMessages.getString( PKG, "CoalesceDialog.Log.FoundFields", String.valueOf( noKeys ) ) );
@@ -317,6 +324,29 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		wStepname.setLayoutData( fdStepname );
 	}
 
+	private void setEmptyStringsAndNullsCheck( int middle, int margin ) {
+		Label wlEmptyStringsCheck = new Label( shell, SWT.RIGHT );
+		wlEmptyStringsCheck.setText( BaseMessages.getString( PKG, "CoalesceDialog.Shell.EmptyStringsAsNulls" ) );
+		props.setLook( wlEmptyStringsCheck );
+		FormData fdlEmptyStringsCheck = new FormData();
+		fdlEmptyStringsCheck.left = new FormAttachment( 0, 0 );
+		fdlEmptyStringsCheck.top = new FormAttachment( wStepname, margin );
+		fdlEmptyStringsCheck.right = new FormAttachment( middle, -margin );
+		wlEmptyStringsCheck.setLayoutData( fdlEmptyStringsCheck );
+
+		wEmptyStringsCheck = new Button( shell, SWT.CHECK );
+		props.setLook( wEmptyStringsCheck );
+		FormData fdEmptyStringsCheck = new FormData();
+		fdEmptyStringsCheck.left = new FormAttachment( middle, 0 );
+		fdEmptyStringsCheck.top = new FormAttachment( wStepname, margin );
+		fdEmptyStringsCheck.right = new FormAttachment( 100, 0 );
+		wEmptyStringsCheck.setLayoutData( fdEmptyStringsCheck );
+		wEmptyStringsCheck.addSelectionListener( new SelectionAdapter() {
+			public void widgetSelected( SelectionEvent e ) {
+				meta.setChanged();
+			}
+		} );
+	}
 
 	private void setTable( int margin, ModifyListener lsMod ) {
 		Label wlFields = new Label( shell, SWT.NONE );
@@ -324,7 +354,7 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 		props.setLook( wlFields );
 		FormData fdlFields = new FormData();
 		fdlFields.left = new FormAttachment( 0, 0 );
-		fdlFields.top = new FormAttachment( wStepname, margin );
+		fdlFields.top = new FormAttachment( wEmptyStringsCheck, margin );
 		wlFields.setLayoutData( fdlFields );
 
 		columnInfos = new ColumnInfo[3 + CoalesceMeta.noInputFields];

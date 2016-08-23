@@ -169,7 +169,7 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 		int nrFields = outputFields.length;
 		retVal.outputFields = Arrays.copyOf( outputFields, nrFields );
 
-		retVal.inputFields = new String[noInputFields][];
+		retVal.inputFields = new String[nrFields][];
 		for ( int i = 0; i < nrFields; i++ ) {
 			retVal.inputFields[i] = Arrays.copyOf( inputFields[i], inputFields[i].length );
 		}

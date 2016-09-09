@@ -431,7 +431,13 @@ public class CoalesceMeta extends BaseStepMeta implements StepMetaInterface {
 			}
 			Integer type = getInputFieldValueType( inputRowMeta, rowIndex, i );
 
-			if ( ( valueType = getResultingType( valueType, type ) ) == STRING_AS_DEFAULT ) {
+			// if no field is provided the result is null
+			Integer resultingType = getResultingType(valueType, type);
+			if (resultingType == null) {
+				throw new KettleStepException(
+						BaseMessages.getString(PKG, "CoalesceMeta.Exception.EmptyField", rowIndex, i));
+			}
+			if ( ( valueType = resultingType) == STRING_AS_DEFAULT ) {
 				return ValueMetaInterface.TYPE_STRING;
 			}
 		} while ( ++i < noInputFields );

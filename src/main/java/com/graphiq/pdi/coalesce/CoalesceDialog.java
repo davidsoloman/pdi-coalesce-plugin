@@ -45,6 +45,7 @@ import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 
 import java.util.*;
+import java.util.List;
 
 public class CoalesceDialog extends BaseStepDialog implements StepDialogInterface {
 
@@ -263,44 +264,51 @@ public class CoalesceDialog extends BaseStepDialog implements StepDialogInterfac
 			logDebug( BaseMessages.getString( PKG, "CoalesceDialog.Log.FoundFields", String.valueOf( noKeys ) ) );
 		}
 
+		List<String> nonEmptyFieldsNames = new ArrayList<String>();
+
 		//CHECKSTYLE:Indentation:OFF
 		for ( int i = 0; i < noKeys; i++ ) {
 			TableItem item = wFields.getNonEmpty( i );
 			meta.getOutputFields()[i] = item.getText( 1 );
 
-			int noNonEmptyFields = 0;
+			int emptyFields = 0;
 			for ( int j = 0; j < CoalesceMeta.noInputFields; j++ ) {
 				meta.getInputFields()[i][j] = item.getText( 2 + j );
 
-				if ( !meta.getInputFields()[i][j].isEmpty() ) {
-					noNonEmptyFields++;
+				if ( meta.getInputFields()[i][j].isEmpty() ) {
+					emptyFields++;
 				}
 			}
 
-			if ( noNonEmptyFields < 2 ) {
-				MessageDialogWithToggle md =
-								new MessageDialogWithToggle(
-												shell,
-												BaseMessages.getString( PKG, "CoalesceDialog.Validations.DialogTitle" ),
-												null,
-												BaseMessages.getString( PKG, "CoalesceDialog.Validations.DialogMessage", Const.CR, Const.CR ),
-												MessageDialog.WARNING,
-												new String[] { BaseMessages.getString( PKG, "CoalesceDialog.Validations.Option.1" ) },
-												0,
-												BaseMessages.getString( PKG, "CoalesceDialog.Validations.Option.2" ),
-												false );
-				MessageDialogWithToggle.setDefaultImage( GUIResource.getInstance().getImageSpoon() );
-				md.open();
+				String typeValueText = item.getText(2 + CoalesceMeta.noInputFields);
+				meta.getValueType()[i] = typeValueText.isEmpty() ? ValueMeta.TYPE_NONE
+						: ValueMeta.getType(typeValueText);
+
+				String isRemoveText = item.getText(3 + CoalesceMeta.noInputFields);
+				meta.getDoRemoveInputFields()[i] = !isRemoveText.isEmpty() && CoalesceMeta.getBooleanFromString(isRemoveText);
+
+			if (emptyFields > 2) {
+				//  Ex.: OutColumn has 2 empty fields
+				nonEmptyFieldsNames.add(Const.CR + " Output Field [" + meta.getOutputFields()[i] + "] has " + emptyFields + " empty fields");
 			}
-
-			String typeValueText = item.getText( 2 + CoalesceMeta.noInputFields );
-			meta.getValueType()[i] = typeValueText.isEmpty() ? ValueMeta.TYPE_NONE
-							: ValueMeta.getType( typeValueText );
-
-			String isRemoveText = item.getText( 3 + CoalesceMeta.noInputFields );
-			meta.getDoRemoveInputFields()[i] = isRemoveText.isEmpty() ? false
-							: CoalesceMeta.getBooleanFromString( isRemoveText );
 		}
+
+		if (!nonEmptyFieldsNames.isEmpty()) {
+			MessageDialogWithToggle md =
+					new MessageDialogWithToggle(
+							shell.getShell(),
+							BaseMessages.getString(PKG, "CoalesceDialog.Validations.DialogTitle"),
+							null,
+							BaseMessages.getString(PKG, "CoalesceDialog.Validations.DialogMessage", Const.CR, Const.CR ) + nonEmptyFieldsNames.toString() + Const.CR,
+							MessageDialog.WARNING,
+							new String[]{BaseMessages.getString(PKG, "CoalesceDialog.Validations.Option.1")},
+							0,
+							BaseMessages.getString(PKG, "CoalesceDialog.Validations.Option.2"),
+							false);
+			MessageDialogWithToggle.setDefaultImage(GUIResource.getInstance().getImageSpoon());
+			md.open();
+		}
+
 	}
 
 	private void setStepName( int middle, int margin, ModifyListener lsMod ) {

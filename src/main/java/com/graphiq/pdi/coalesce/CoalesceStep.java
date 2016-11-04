@@ -19,6 +19,7 @@ package com.graphiq.pdi.coalesce;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
+import org.pentaho.di.core.row.RowDataUtil;
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.i18n.BaseMessages;
@@ -31,7 +32,6 @@ import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 
@@ -136,8 +136,14 @@ public class CoalesceStep extends BaseStep implements StepInterface {
 
 		RowMetaInterface inputRowMeta = getInputRowMeta();
 
-		// copies r into outputRowValues and pads extra null-default slots for the output values
-		data.outputRowValues = Arrays.copyOf(r, data.outputRowMeta.size());
+		// Creates a new row and copies the fields that will live on into the array
+		data.outputRowValues = RowDataUtil.allocateRowData(data.outputRowMeta.size());
+		for ( int i = 0; i < inputRowMeta.size(); i++ ) {
+			int outputIndex = data.outputRowMeta.indexOfValue(inputRowMeta.getFieldNames()[i]);
+			if (outputIndex >= 0) {
+				data.outputRowValues[outputIndex] = r[i];
+			}
+		}
 
 		//add extra field values to the output
 		for ( int i = 0; i < meta.getOutputFields().length; i++ ) {
